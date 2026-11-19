@@ -1,0 +1,100 @@
+tests/orders.test.ts
+  s_e306032442c6fb::t_74f605956e1cd2 190,220,236,301,370
+  s_e306032442c6fb::t_eccb9e60b8adf0 61
+  s_e306032442c6fb::t_b9ff73bd8c4d22 53-58,511,525
+  s_e306032442c6fb::t_f82b269b0e829c 37-41,489
+  s_e306032442c6fb::t_d48a474ff6d48b 1-36,42-52,59-60,62-63,65-137,139-154,156-166,168-189,191-219,221-228,230-235,237-269,339-354,359-364,366-369,371-405,407-428,430-433,435-438,440-461,465-488,490-510,512-521,524,526,545
+  s_e306032442c6fb::t_957a60fc1ccdad 462-464
+  s_e306032442c6fb::t_00bb8e38e5e17b 278-281,285-289,291-294,296-300,328,330-333
+  s_e306032442c6fb::t_d3d0917d8980d9 138,355-358,522-523,527-544
+  s_e306032442c6fb::t_acf92952880dde 64,155,167,229,273,311,329,365,406,429,434,439
+  s_e306032442c6fb::t_bfdc1f7b0edbf7 270-272,274-277,282-284,290,295,302-310,312-327,334-338
+src/db/schema.ts
+  s_e306032442c6fb::t_742c57cf408922 1-178
+README.md
+  s_e306032442c6fb::t_5b5a0a15a2ffd1 15,38,59,86-87,90
+  s_e306032442c6fb::t_acf92952880dde 5,30
+  s_e306032442c6fb::t_fca2caba1bdda3 28,44
+  s_e306032442c6fb::t_19bc4f9ead1b0e 45
+drizzle/0001_immutable_order_events.sql
+  s_e306032442c6fb::t_730743176edb1e 1-10
+tsconfig.json
+  s_e306032442c6fb::t_e1e8612689435f 1-23
+drizzle/0000_trading_journal.sql
+  s_e306032442c6fb::t_2930bd6c9015fc 1-76
+src/db/client.ts
+  s_e306032442c6fb::t_337f1f862bce50 29-54
+  s_e306032442c6fb::t_7a6ef9c8c308ad 1-28,55-60
+src/lib/orders.ts
+  s_e306032442c6fb::t_5c20b28dacfff9 1-26,28-53,55-57,75-100,106,108-109,111-116,118,126-127,151,170-171,173-176,178-206,208-217,220-252,254-268,271-312,315-368,370,372,374-386,389,391-491
+  s_e306032442c6fb::t_594fece690f3cc 387-388,390
+  s_e306032442c6fb::t_a56263ab7b095c 27,54,58-74,101-105,107,110,117,119-125,128-150,152-169,172,177,207,218-219,253,269-270,313-314,369,371,373
+package.json
+  s_e306032442c6fb::t_e1e8612689435f 1-30,32-36
+  s_e306032442c6fb::t_a9486598570ec3 31
+src/lib/input.ts
+  s_e306032442c6fb::t_5b5a0a15a2ffd1 37,51-52
+  s_e306032442c6fb::t_c199e5edd9c972 1-36,38-50,53-156
+.gitignore
+  s_e306032442c6fb::t_7f73f3d17a6282 1-11
+tests/helper.ts
+  s_e306032442c6fb::t_66e5986b035881 1-80
+drizzle.config.ts
+  s_e306032442c6fb::t_2ed05eb01aa6bc 1-13
+drizzle/meta/0000_snapshot.json
+  s_e306032442c6fb::t_a3e5ac337a2f20 1-563
+drizzle/meta/0001_snapshot.json
+  s_e306032442c6fb::t_150addbd5246ef 1-563
+drizzle/meta/_journal.json
+  s_e306032442c6fb::t_3ba0385385db60 1-20
+next-env.d.ts
+  s_e306032442c6fb::t_f9115bed78dcfe 1-7
+package-lock.json
+  s_e306032442c6fb::t_ac7627debb949c 1-8140
+src/app/api/orders/[id]/cancel/route.ts
+  s_e306032442c6fb::t_c2fcb08e71b5a0 1-7
+src/app/api/orders/[id]/fills/route.ts
+  s_e306032442c6fb::t_2efa80a7306298 1-7
+src/app/api/orders/[id]/route.ts
+  s_e306032442c6fb::t_2feefd02026ccb 1-6
+src/app/api/orders/route.ts
+  s_e306032442c6fb::t_13ffe08954f35b 1-9
+src/app/globals.css
+  s_e306032442c6fb::t_9f495cc1d51f12 1-50
+src/app/page.tsx
+  s_e306032442c6fb::t_6ea3a9f2e8c028 1-9
+src/lib/http.ts
+  s_e306032442c6fb::t_20c0813039e27c 1-116
+.env.example
+  s_825c92beaaa58e::t_00719a37c68506 1-2
+eslint.config.mjs
+  s_825c92beaaa58e::t_6e598d5e8c462c 1-9
+next.config.ts
+  s_825c92beaaa58e::t_4809e0ddda7f0a 1-7
+src/app/layout.tsx
+  s_825c92beaaa58e::t_b93da95320ed9f 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "41e6c78746390bef985bd0afa43ad5e36ab7813b",
+  "prompts": {},
+  "sessions": {
+    "s_825c92beaaa58e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f2e5-9525-7c73-84e6-c78c7fb8ca3a",
+        "model": "unknown"
+      },
+      "human_author": "liangshuang.103 <liangshuang.103@jd.com>"
+    },
+    "s_e306032442c6fb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f2e4-5d0d-7d22-a566-8270b908524d",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "liangshuang.103 <liangshuang.103@jd.com>"
+    }
+  }
+}
