@@ -1,0 +1,563 @@
+{
+  "id": "bab2f007-9707-421b-8bf4-8cc94b9dc6d5",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.order_events": {
+      "name": "order_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "order_event_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric(20, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "numeric(20, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recorded_at": {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_hash": {
+          "name": "request_hash",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_reference": {
+          "name": "source_reference",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "legacy_import": {
+          "name": "legacy_import",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "order_events_order_sequence_uq": {
+          "name": "order_events_order_sequence_uq",
+          "columns": [
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sequence",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "order_events_idempotency_key_uq": {
+          "name": "order_events_idempotency_key_uq",
+          "columns": [
+            {
+              "expression": "idempotency_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "order_events_order_recorded_idx": {
+          "name": "order_events_order_recorded_idx",
+          "columns": [
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "recorded_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "order_events_occurred_at_idx": {
+          "name": "order_events_occurred_at_idx",
+          "columns": [
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "order_events_order_id_orders_id_fk": {
+          "name": "order_events_order_id_orders_id_fk",
+          "tableFrom": "order_events",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "order_events_sequence_positive_ck": {
+          "name": "order_events_sequence_positive_ck",
+          "value": "\"order_events\".\"sequence\" > 0"
+        },
+        "order_events_price_positive_ck": {
+          "name": "order_events_price_positive_ck",
+          "value": "\"order_events\".\"price\" is null or (\"order_events\".\"price\" <> 'NaN'::numeric and \"order_events\".\"price\" > 0)"
+        },
+        "order_events_quantity_positive_ck": {
+          "name": "order_events_quantity_positive_ck",
+          "value": "\"order_events\".\"quantity\" is null or (\"order_events\".\"quantity\" <> 'NaN'::numeric and \"order_events\".\"quantity\" > 0)"
+        },
+        "order_events_legacy_source_ck": {
+          "name": "order_events_legacy_source_ck",
+          "value": "not \"order_events\".\"legacy_import\" or \"order_events\".\"source_reference\" is not null"
+        },
+        "order_events_idempotency_hash_ck": {
+          "name": "order_events_idempotency_hash_ck",
+          "value": "\"order_events\".\"request_hash\" ~ '^[a-f0-9]{64}$'"
+        },
+        "order_events_required_values_ck": {
+          "name": "order_events_required_values_ck",
+          "value": "(\"order_events\".\"event_type\" <> 'SUBMITTED' or \"order_events\".\"quantity\" is not null) and (\"order_events\".\"event_type\" <> 'FILLED' or (\"order_events\".\"quantity\" is not null and (\"order_events\".\"price\" is not null or (\"order_events\".\"legacy_import\" and \"order_events\".\"source_reference\" is not null))))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.orders": {
+      "name": "orders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "side": {
+          "name": "side",
+          "type": "order_side",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "order_type": {
+          "name": "order_type",
+          "type": "order_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "limit_price": {
+          "name": "limit_price",
+          "type": "numeric(20, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "numeric(20, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "filled_quantity": {
+          "name": "filled_quantity",
+          "type": "numeric(20, 8)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "status": {
+          "name": "status",
+          "type": "order_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'OPEN'"
+        },
+        "source_reference": {
+          "name": "source_reference",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "legacy_import": {
+          "name": "legacy_import",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "orders_symbol_idx": {
+          "name": "orders_symbol_idx",
+          "columns": [
+            {
+              "expression": "symbol",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "orders_status_idx": {
+          "name": "orders_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "orders_created_at_idx": {
+          "name": "orders_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "orders_symbol_format_ck": {
+          "name": "orders_symbol_format_ck",
+          "value": "\"orders\".\"symbol\" ~ '^[A-Z0-9][A-Z0-9.-]{0,15}$'"
+        },
+        "orders_limit_price_positive_ck": {
+          "name": "orders_limit_price_positive_ck",
+          "value": "\"orders\".\"limit_price\" is null or (\"orders\".\"limit_price\" <> 'NaN'::numeric and \"orders\".\"limit_price\" > 0)"
+        },
+        "orders_quantity_positive_ck": {
+          "name": "orders_quantity_positive_ck",
+          "value": "\"orders\".\"quantity\" is null or (\"orders\".\"quantity\" <> 'NaN'::numeric and \"orders\".\"quantity\" > 0)"
+        },
+        "orders_filled_quantity_valid_ck": {
+          "name": "orders_filled_quantity_valid_ck",
+          "value": "\"orders\".\"filled_quantity\" <> 'NaN'::numeric and \"orders\".\"filled_quantity\" >= 0 and (\"orders\".\"quantity\" is null or \"orders\".\"filled_quantity\" <= \"orders\".\"quantity\")"
+        },
+        "orders_known_state_consistent_ck": {
+          "name": "orders_known_state_consistent_ck",
+          "value": "(\"orders\".\"status\" = 'UNKNOWN' and \"orders\".\"legacy_import\") or (\"orders\".\"status\" = 'OPEN' and \"orders\".\"quantity\" is not null and \"orders\".\"filled_quantity\" = 0) or (\"orders\".\"status\" = 'PARTIALLY_FILLED' and \"orders\".\"quantity\" is not null and \"orders\".\"filled_quantity\" > 0 and \"orders\".\"filled_quantity\" < \"orders\".\"quantity\") or (\"orders\".\"status\" = 'FILLED' and \"orders\".\"quantity\" is not null and \"orders\".\"filled_quantity\" = \"orders\".\"quantity\") or (\"orders\".\"status\" = 'CANCELLED' and \"orders\".\"quantity\" is not null and \"orders\".\"filled_quantity\" < \"orders\".\"quantity\")"
+        },
+        "orders_nonlegacy_complete_ck": {
+          "name": "orders_nonlegacy_complete_ck",
+          "value": "\"orders\".\"legacy_import\" or (\"orders\".\"quantity\" is not null and \"orders\".\"status\" <> 'UNKNOWN')"
+        },
+        "orders_limit_price_consistent_ck": {
+          "name": "orders_limit_price_consistent_ck",
+          "value": "case when \"orders\".\"order_type\" = 'LIMIT' then \"orders\".\"limit_price\" is not null else \"orders\".\"limit_price\" is null end"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.reviews": {
+      "name": "reviews",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pre_trade_plan": {
+          "name": "pre_trade_plan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "followed_plan": {
+          "name": "followed_plan",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "execution_review": {
+          "name": "execution_review",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deviations": {
+          "name": "deviations",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lessons": {
+          "name": "lessons",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "reviews_order_id_uq": {
+          "name": "reviews_order_id_uq",
+          "columns": [
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "reviews_order_id_orders_id_fk": {
+          "name": "reviews_order_id_orders_id_fk",
+          "tableFrom": "reviews",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.write_rate_limit": {
+      "name": "write_rate_limit",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hits": {
+          "name": "hits",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.order_event_type": {
+      "name": "order_event_type",
+      "schema": "public",
+      "values": [
+        "SUBMITTED",
+        "FILLED",
+        "CANCELLED"
+      ]
+    },
+    "public.order_side": {
+      "name": "order_side",
+      "schema": "public",
+      "values": [
+        "BUY",
+        "SELL"
+      ]
+    },
+    "public.order_status": {
+      "name": "order_status",
+      "schema": "public",
+      "values": [
+        "OPEN",
+        "PARTIALLY_FILLED",
+        "FILLED",
+        "CANCELLED",
+        "UNKNOWN"
+      ]
+    },
+    "public.order_type": {
+      "name": "order_type",
+      "schema": "public",
+      "values": [
+        "LIMIT",
+        "MARKET"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1795077043727,
+      "tag": "0000_trading_journal",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795077052811,
+      "tag": "0001_immutable_order_events",
+      "breakpoints": true
+    }
+  ]
+}
