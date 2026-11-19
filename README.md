@@ -1,6 +1,6 @@
 # 个人交易流水
 
-单用户股票交易记录服务。Phase 1 提供受保护的订单 API、Drizzle 迁移和真实 PostgreSQL 验收测试。首页只显示应用名称。Dashboard、复盘编辑、ChatGPT MCP 接入及生产部署按后续阶段实施。
+单用户股票交易日志。登录后可查看订单和事件、筛选流水、核对订单生命周期并编写执行复盘。服务端同时提供受保护的订单 API。
 
 项目源码公开托管在下列 GitHub 仓库。应用密钥保存在服务端环境变量中，交易数据保存在受认证保护的数据库中。[personal-stock-review-system](https://github.com/liangmouse/personal-stock-review-system)
 
@@ -8,11 +8,22 @@
 
 1. 安装 Node.js 22 LTS 和 npm，执行 `npm ci`。
 2. 在 Neon 创建开发数据库。从 Connect 获取带 TLS 的 PostgreSQL 连接信息。运行应用时使用 pooled 地址，执行迁移时使用数据库所有者的 direct 地址。
-3. 复制 `.env.example` 为 `.env.local`。设置服务端 `DATABASE_URL` 和 `JOURNAL_API_TOKEN`。令牌应由密码管理器生成，或用 `openssl rand -hex 32` 在本机生成。将来接入 MCP 时单独配置认证凭据。
+3. 复制 `.env.example` 为 `.env.local`。设置服务端 `DATABASE_URL`、`JOURNAL_API_TOKEN` 和 `JOURNAL_WEB_PASSWORD`。API 令牌与网页登录密码分别用密码管理器或 `openssl rand -hex 32` 生成。将来接入 MCP 时单独配置认证凭据。
 4. 在本机独立 shell 中将 `DATABASE_URL` 临时设为开发库的 direct 地址，执行 `npm run db:migrate`。迁移仅由部署者执行。退出该 shell 后，应用使用 `.env.local` 中的运行时连接。
 5. 执行 `npm run dev`。本地默认监听端口为 3000。只将令牌用于本机测试或 HTTPS 请求。
 
-运行时数据库角色需要 public schema 的 USAGE、orders 的 SELECT/INSERT/UPDATE、order_events 的 SELECT/INSERT、write_rate_limit 的 SELECT/INSERT/UPDATE。生产密钥存入部署平台的服务端环境变量。备份凭据和迁移凭据由部署者独立保存。
+运行时数据库角色需要 public schema 的 USAGE，orders、reviews 和 write_rate_limit 的 SELECT/INSERT/UPDATE，以及 order_events 和 review_write_receipts 的 SELECT/INSERT。生产密钥存入部署平台的服务端环境变量。备份凭据和迁移凭据由部署者独立保存。
+
+## Web 工作台
+
+| 页面 | 用途 |
+| --- | --- |
+| `/` | 显示事件总数、仍在进行的订单数、尚无复盘的订单数，以及最近入账的六条事件。 |
+| `/events` | 按标的、方向、操作、订单当前状态和发生日期筛选。自然日按上海时区计算；发生时间未知的事件在启用日期过滤时不会匹配。 |
+| `/orders/{id}` | 按记账序号查看事件、数量、价格、实际发生时间、入账时间和来源。 |
+| `/reviews` | 查看待复盘和已复盘订单，进入 `/orders/{id}/review` 创建或修改复盘。 |
+
+网页登录使用独立的 `JOURNAL_WEB_PASSWORD`，建议使用至少 24 个可打印、无空格的随机 ASCII 字符。浏览器仅接收有签名的 HttpOnly 会话 Cookie，生产环境强制 Secure，12 小时失效。轮换 Web 密码会使已签发的会话失效。复盘编辑使用版本号校验，旧页面保存会提示重新加载；已成功的请求可凭原幂等键取得原回执。复盘只改变该订单的复盘内容。
 
 ## Schema 和记账语义
 
@@ -21,7 +32,8 @@
 | `orders` | UUID 主键，保存标的、方向、订单类型、限价、委托量、累计成交量和当前状态。普通订单必须声明委托量。 |
 | `order_events` | 每笔事件以外键关联订单。事件保存类型、价格、数量、备注、实际发生时间、系统入账时间和顺序。全局唯一幂等键和请求摘要用于识别重复写入与冲突。 |
 | `reviews` | 订单外键唯一，保存下单计划、是否遵守、执行复盘、偏差和改进。 |
-| `write_rate_limit` | 单用户共用一条分钟计数，数据库原子更新，全实例共享。 |
+| `review_write_receipts` | 为每次复盘写入保留唯一请求键、请求摘要、订单、复盘 ID 和版本。 |
+| `write_rate_limit` | API 写入、网页登录和复盘保存各用一条分钟计数，全实例共享。 |
 
 价格与数量使用 PostgreSQL 精确十进制。API 用 JSON 字符串收发这些值，最多 12 位整数、8 位小数。现阶段价格单位为 USD，数量单位为股。实际发生时间 `occurred_at` 需要带时区，精确到毫秒以内。仅知道报告日期、交易时段时，可写进备注，实际发生时间留空。系统自动生成 `recorded_at`。
 
@@ -68,6 +80,12 @@ npm run build
 ```
 
 测试在临时目录启动 PostgreSQL，运行项目迁移并使用合成数据。生产构建独立于数据库连接。变更 Schema 后用 `npm run db:generate` 生成并审阅新迁移，通过临时数据库测试后再应用。
+
+## Vercel 预览与 Neon 联调
+
+Vercel 项目使用 Hobby、Next.js 预设和 Node.js 22。Neon Free 项目为预览环境提供独立数据库分支 `phase2-preview`。运行时使用低权限角色的 pooled 地址，迁移使用该分支所有者的 direct 地址。将上述三个变量配置在 Vercel 的 Preview 环境，并对预览分支运行迁移。
+
+Vercel CLI 要求此项目的首次部署使用 Production。首次发布后，可从项目根目录执行 `vercel deploy --environment preview` 发布预览。受 Vercel 访问保护的预览会先验证 Vercel 身份，再由应用登录页验证个人访问密码。
 
 ## 逻辑备份和恢复
 

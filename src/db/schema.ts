@@ -156,6 +156,7 @@ export const reviews = pgTable(
     executionReview: text("execution_review"),
     deviations: text("deviations"),
     lessons: text("lessons"),
+    version: integer("version").notNull().default(1),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -163,7 +164,38 @@ export const reviews = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [uniqueIndex("reviews_order_id_uq").on(table.orderId)],
+  (table) => [
+    check("reviews_version_positive_ck", sql`${table.version} > 0`),
+    uniqueIndex("reviews_order_id_uq").on(table.orderId),
+  ],
+);
+
+export const reviewWriteReceipts = pgTable(
+  "review_write_receipts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "restrict" }),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "restrict" }),
+    version: integer("version").notNull(),
+    idempotencyKey: varchar("idempotency_key", { length: 200 }).notNull(),
+    requestHash: varchar("request_hash", { length: 64 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("review_write_receipts_version_positive_ck", sql`${table.version} > 0`),
+    check(
+      "review_write_receipts_request_hash_ck",
+      sql`${table.requestHash} ~ '^[a-f0-9]{64}$'`,
+    ),
+    uniqueIndex("review_write_receipts_idempotency_key_uq").on(table.idempotencyKey),
+    uniqueIndex("review_write_receipts_order_version_uq").on(table.orderId, table.version),
+  ],
 );
 
 export const writeRateLimit = pgTable("write_rate_limit", {
@@ -175,4 +207,4 @@ export const writeRateLimit = pgTable("write_rate_limit", {
   hits: integer("hits").notNull(),
 });
 
-export const schema = { orders, orderEvents, reviews, writeRateLimit };
+export const schema = { orders, orderEvents, reviews, reviewWriteReceipts, writeRateLimit };

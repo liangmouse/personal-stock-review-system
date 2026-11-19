@@ -6,9 +6,15 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "交易日志",
   description: "个人股票交易流水与复盘系统",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="zh-CN">
       <body>{children}</body>

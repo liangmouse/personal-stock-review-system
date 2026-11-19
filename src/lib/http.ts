@@ -1,11 +1,9 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { sql } from 'drizzle-orm';
 import { getDb } from '../db/client';
-import { writeRateLimit } from '../db/schema';
 import { getOrderDetail, JournalError, listOrders, writeOrder } from './orders';
+import { countJournalAttempt, RateLimitError } from './rate-limit';
 
 const bodyLimit = 16 * 1024;
-const writesPerMinute = 60;
 export type OrderRoute = { params: Promise<{ id: string }> };
 
 function authenticate(request: Request) {
@@ -18,23 +16,6 @@ function authenticate(request: Request) {
   if (!supplied || !timingSafeEqual(digest(supplied), digest(token))) {
     throw new JournalError(401, 'UNAUTHORIZED', '需要有效的访问令牌。');
   }
-}
-
-async function countWriteAttempt() {
-  const minute = sql`date_trunc('minute', statement_timestamp())`;
-  // A single UPSERT shares the budget across instances. An older waiting request
-  // cannot move the active window backwards after the minute rolls over.
-  const counter = writeRateLimit;
-  const [accepted] = await getDb().insert(counter).values({ id: 1, windowStart: minute, hits: 1 })
-    .onConflictDoUpdate({
-      target: counter.id,
-      set: {
-        windowStart: sql`greatest(${counter.windowStart}, ${minute})`,
-        hits: sql`case when ${counter.windowStart} < ${minute} then 1 else ${counter.hits} + 1 end`,
-      },
-      setWhere: sql`${counter.windowStart} < ${minute} or ${counter.hits} < ${writesPerMinute}`,
-    }).returning({ hits: counter.hits });
-  if (!accepted) throw new JournalError(429, 'RATE_LIMITED', '写入过于频繁，请稍后重试。');
 }
 
 async function readJson(request: Request): Promise<unknown> {
@@ -80,6 +61,9 @@ async function authenticated(request: Request, action: () => Promise<Response>) 
     authenticate(request);
     return await action();
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return json({ ok: false, error: { code: 'RATE_LIMITED', message: error.message } }, 429);
+    }
     // Database errors can include query parameters, credentials or journal text.
     const failure = error instanceof JournalError ? error :
       new JournalError(503, 'SERVICE_UNAVAILABLE', '服务暂时不可用，请使用原幂等键重试。');
@@ -89,7 +73,7 @@ async function authenticated(request: Request, action: () => Promise<Response>) 
 
 export function writeResponse(request: Request, kind: 'create' | 'fill' | 'cancel', route?: OrderRoute) {
   return authenticated(request, async () => {
-    await countWriteAttempt();
+    await countJournalAttempt(1, 60, '写入过于频繁，请稍后重试。');
     const orderId = (await route?.params)?.id;
     const body = await readJson(request);
     const receipt = await writeOrder(getDb(), { kind, orderId, body });
