@@ -1,7 +1,14 @@
 import { z } from "zod";
 
 const decimalPattern = /^(?:0|[1-9]\d{0,11})(?:\.\d{1,8})?$/;
-const timestampSchema = z
+export const decimalStringInput = z
+  .string()
+  .regex(decimalPattern, "must be a decimal string with at most 12 integer and 8 fractional digits");
+export const positiveDecimalStringInput = decimalStringInput.refine(
+  (value) => /[1-9]/.test(value),
+  "must be greater than zero",
+);
+export const timestampInput = z
   .iso.datetime({ offset: true })
   .refine(
     (value) =>
@@ -16,48 +23,53 @@ function normalizeDecimal(value: string): string {
   return normalizedFraction ? `${whole}.${normalizedFraction}` : whole;
 }
 
-export const decimalInput = z
-  .string()
-  .regex(decimalPattern, "must be a decimal string with at most 12 integer and 8 fractional digits")
-  .transform(normalizeDecimal);
+export const decimalInput = decimalStringInput.transform(normalizeDecimal);
 
-export const positiveDecimalInput = decimalInput.refine(
-  (value) => value !== "0",
-  "must be greater than zero",
-);
+export const positiveDecimalInput = positiveDecimalStringInput.transform(normalizeDecimal);
 
-const nullableOccurredAt = timestampSchema
+const nullableOccurredAt = timestampInput
   .nullable()
   .optional()
   .transform((value) => (value ? new Date(value) : null));
 
-const noteInput = z
+export const noteTextInput = z
   .string()
   .max(2_000)
-  .refine((value) => value.isWellFormed() && !value.includes("\0"), "must be valid Unicode without NUL characters")
+  .refine((value) => value.isWellFormed() && !value.includes("\0"), "must be valid Unicode without NUL characters");
+
+const noteInput = noteTextInput
   .nullable()
   .optional()
   .transform((value) => value ?? null);
 
-const idempotencyKeyInput = z
+export const idempotencyKeyInput = z
   .string()
   .min(1)
   .max(200)
   .regex(/^[\x21-\x7e]+$/, "must contain printable non-space ASCII characters");
 
-const symbolInput = z
+export const symbolCodeInput = z
   .string()
-  .trim()
-  .regex(/^[A-Za-z0-9][A-Za-z0-9.-]{0,15}$/)
-  .toUpperCase();
+  .refine((value) => /^[A-Za-z0-9][A-Za-z0-9.-]{0,15}$/.test(value.trim()));
+const symbolInput = symbolCodeInput.trim().toUpperCase();
+
+export const orderSideInput = z.enum(["BUY", "SELL"]);
+export const orderTypeInput = z.enum(["LIMIT", "MARKET"]);
+export const orderStatusInput = z.enum([
+  "OPEN",
+  "PARTIALLY_FILLED",
+  "FILLED",
+  "CANCELLED",
+  "UNKNOWN",
+]);
 
 export const orderIdInput = z.string().uuid();
 
 export const createOrderInput = z
   .object({
     symbol: symbolInput,
-    side: z.enum(["BUY", "SELL"]),
-    order_type: z.enum(["LIMIT", "MARKET"]).nullable().optional(),
+    side: orderSideInput,
+    order_type: orderTypeInput.nullable().optional(),
     limit_price: positiveDecimalInput.nullable().optional(),
     quantity: positiveDecimalInput,
     occurred_at: nullableOccurredAt,
@@ -124,18 +136,10 @@ const pageSizeInput = z
 export const listOrdersInput = z
   .object({
     symbol: symbolInput.optional(),
-    status: z
-      .enum([
-        "OPEN",
-        "PARTIALLY_FILLED",
-        "FILLED",
-        "CANCELLED",
-        "UNKNOWN",
-      ])
-      .optional(),
-    side: z.enum(["BUY", "SELL"]).optional(),
-    from: timestampSchema.optional(),
-    to: timestampSchema.optional(),
+    status: orderStatusInput.optional(),
+    side: orderSideInput.optional(),
+    from: timestampInput.optional(),
+    to: timestampInput.optional(),
     page: pageInput,
     page_size: pageSizeInput,
   })

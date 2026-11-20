@@ -6,8 +6,7 @@ import { countJournalAttempt, RateLimitError } from './rate-limit';
 const bodyLimit = 16 * 1024;
 export type OrderRoute = { params: Promise<{ id: string }> };
 
-function authenticate(request: Request) {
-  const token = process.env.JOURNAL_API_TOKEN;
+export function authenticateBearer(request: Request, token: string | undefined) {
   if (!token || !/^[!-~]{32,}$/.test(token)) {
     throw new JournalError(503, 'AUTH_UNAVAILABLE', '服务端认证尚未配置。');
   }
@@ -58,7 +57,7 @@ function json(body: unknown, status = 200) {
 
 async function authenticated(request: Request, action: () => Promise<Response>) {
   try {
-    authenticate(request);
+    authenticateBearer(request, process.env.JOURNAL_API_TOKEN);
     return await action();
   } catch (error) {
     if (error instanceof RateLimitError) {

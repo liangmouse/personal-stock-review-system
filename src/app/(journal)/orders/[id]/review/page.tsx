@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { formatDecimal, formatPrice, orderStatusLabels, sideLabels, statusTone } from "@/components/labels";
 import { getDb } from "@/db/client";
-import { getJournalOrderDetail, getReview } from "@/lib/journal";
+import { getJournalOrderDetail } from "@/lib/journal";
 import { JournalError } from "@/lib/orders";
 import { requireSession } from "@/lib/session";
 import { ReviewEditor } from "./review-editor";
@@ -22,17 +22,13 @@ export default async function OrderReviewPage({
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const db = getDb();
   let detail;
-  let data;
   try {
-    [detail, data] = await Promise.all([
-      getJournalOrderDetail(db, id),
-      getReview(db, id),
-    ]);
+    detail = await getJournalOrderDetail(db, id);
   } catch (error) {
     if (error instanceof JournalError && error.status === 404) notFound();
     throw error;
   }
-  const review = data.review;
+  const review = detail.review;
   const savedReviewId =
     typeof query.saved_review === "string" ? query.saved_review : null;
   const order = detail.order;

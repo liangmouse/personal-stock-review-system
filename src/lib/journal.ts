@@ -13,7 +13,8 @@ import { type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { z } from "zod";
 
 import * as schema from "@/db/schema";
-import { JournalError, getOrderDetail } from "@/lib/orders";
+import { JournalError, getOrderDetailInTransaction } from "@/lib/orders";
+import { orderIdInput } from "@/lib/input";
 
 type Database = NodePgDatabase<typeof schema>;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -301,7 +302,22 @@ export async function listActivity(
 }
 
 export async function getJournalOrderDetail(db: Database, orderId: string) {
-  return getOrderDetail(db, orderId);
+  const parsedOrderId = orderIdInput.safeParse(orderId);
+  if (!parsedOrderId.success) {
+    throw new JournalError(400, "INVALID_ORDER_ID", "必须提供有效的订单 ID。");
+  }
+  const normalizedOrderId = parsedOrderId.data.toLowerCase();
+
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`set transaction isolation level repeatable read`);
+    const detail = await getOrderDetailInTransaction(tx, normalizedOrderId);
+    const [review] = await tx
+      .select()
+      .from(schema.reviews)
+      .where(eq(schema.reviews.orderId, detail.order.id))
+      .limit(1);
+    return { ...detail, review: review ? reviewSummary(review) : null };
+  });
 }
 
 function reviewFilters(filter: "pending" | "all" | "reviewed") {

@@ -460,6 +460,26 @@ export async function listOrders(
   });
 }
 
+export async function getOrderDetailInTransaction(tx: Transaction, orderId: string) {
+  const [order] = await tx
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.id, orderId))
+    .limit(1);
+  if (!order) throw new JournalError(404, "ORDER_NOT_FOUND", "没有找到该订单。");
+
+  const events = await tx
+    .select()
+    .from(schema.orderEvents)
+    .where(eq(schema.orderEvents.orderId, orderId))
+    .orderBy(schema.orderEvents.sequence);
+
+  return {
+    order: orderResponse(order),
+    events: events.map(eventResponse),
+  };
+}
+
 export async function getOrderDetail(db: Database, rawOrderId: string) {
   const parsedOrderId = orderIdInput.safeParse(rawOrderId);
   if (!parsedOrderId.success) {
@@ -469,23 +489,6 @@ export async function getOrderDetail(db: Database, rawOrderId: string) {
 
   return db.transaction(async (tx) => {
     await tx.execute(sql`set transaction isolation level repeatable read`);
-
-    const [order] = await tx
-      .select()
-      .from(schema.orders)
-      .where(eq(schema.orders.id, orderId))
-      .limit(1);
-    if (!order) throw new JournalError(404, "ORDER_NOT_FOUND", "没有找到该订单。");
-
-    const events = await tx
-      .select()
-      .from(schema.orderEvents)
-      .where(eq(schema.orderEvents.orderId, orderId))
-      .orderBy(schema.orderEvents.sequence);
-
-    return {
-      order: orderResponse(order),
-      events: events.map(eventResponse),
-    };
+    return getOrderDetailInTransaction(tx, orderId);
   });
 }

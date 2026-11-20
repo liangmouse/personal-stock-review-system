@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { eventTone, eventTypeLabels, formatDateTime, formatDecimal, formatPrice, orderStatusLabels, sideLabels, statusTone } from "@/components/labels";
 import { getDb } from "@/db/client";
-import { getJournalOrderDetail, getReview } from "@/lib/journal";
+import { getJournalOrderDetail } from "@/lib/journal";
 import { JournalError } from "@/lib/orders";
 import { requireSession } from "@/lib/session";
 
@@ -18,19 +18,15 @@ export default async function OrderDetailPage({
   const { id } = await params;
   const db = getDb();
   let detail;
-  let reviewData;
   try {
-    [detail, reviewData] = await Promise.all([
-      getJournalOrderDetail(db, id),
-      getReview(db, id),
-    ]);
+    detail = await getJournalOrderDetail(db, id);
   } catch (error) {
     if (error instanceof JournalError && error.status === 404) notFound();
     throw error;
   }
 
   const { order, events } = detail;
-  const review = reviewData.review;
+  const review = detail.review;
   return (
     <div className="page-content">
       <div className="back-link-row">

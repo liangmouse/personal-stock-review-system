@@ -1,6 +1,6 @@
 # 个人交易流水
 
-单用户股票交易日志。登录后可查看订单和事件、筛选流水、核对订单生命周期并编写执行复盘。服务端同时提供受保护的订单 API。
+单用户股票交易日志。登录后可查看订单和事件、筛选流水、核对订单生命周期并编写执行复盘。服务端提供订单 API，以及记录订单和复盘的远程 MCP 工具。
 
 项目源码公开托管在下列 GitHub 仓库。应用密钥保存在服务端环境变量中，交易数据保存在受认证保护的数据库中。[personal-stock-review-system](https://github.com/liangmouse/personal-stock-review-system)
 
@@ -8,7 +8,7 @@
 
 1. 安装 Node.js 22 LTS 和 npm，执行 `npm ci`。
 2. 在 Neon 创建开发数据库。从 Connect 获取带 TLS 的 PostgreSQL 连接信息。运行应用时使用 pooled 地址，执行迁移时使用数据库所有者的 direct 地址。
-3. 复制 `.env.example` 为 `.env.local`。设置服务端 `DATABASE_URL`、`JOURNAL_API_TOKEN` 和 `JOURNAL_WEB_PASSWORD`。API 令牌与网页登录密码分别用密码管理器或 `openssl rand -hex 32` 生成。将来接入 MCP 时单独配置认证凭据。
+3. 复制 `.env.example` 为 `.env.local`。设置服务端 `DATABASE_URL`、`JOURNAL_API_TOKEN`、`JOURNAL_WEB_PASSWORD` 和 `JOURNAL_MCP_TOKEN`。分别使用密码管理器或 `openssl rand -hex 32` 为 API、网页和 MCP 生成独立凭据。
 4. 在本机独立 shell 中将 `DATABASE_URL` 临时设为开发库的 direct 地址，执行 `npm run db:migrate`。迁移仅由部署者执行。退出该 shell 后，应用使用 `.env.local` 中的运行时连接。
 5. 执行 `npm run dev`。本地默认监听端口为 3000。只将令牌用于本机测试或 HTTPS 请求。
 
@@ -70,6 +70,21 @@
 
 首次成功写入返回 HTTP 201 和 `{ok, order_id, event_id, replayed:false}`，同一请求重放返回 200、原始两个 ID 和 `replayed:true`。同键异参、超额成交或状态冲突返回 409。失败响应为 `{ok:false, error:{code,message}}`。遇到超时、503 或连接中断，保留请求内容和原键重试。429 使用 Retry-After。客户端只在取得成功回执后确认入账。
 
+## MCP 预览接入
+
+MCP 客户端向预览域名的 `/mcp` 发送 Streamable HTTP 请求，并在请求头发送 `Authorization: Bearer <JOURNAL_MCP_TOKEN>`。握手、工具发现、查询和写入均须鉴权。请求体上限为 128 KiB。订单写入与 HTTP API 共享每分钟 60 次的限额，复盘写入与网页共享每分钟 30 次的限额。
+
+| 工具 | 输入和回执 |
+| --- | --- |
+| `create_order` | 按用户明确提供的标的、方向和数量创建委托。限价单须带限价。返回订单和挂单事件 ID。 |
+| `record_fill`、`cancel_order` | 传已确认订单的 UUID。成交须传价格与数量的十进制字符串；撤单可传已确认的剩余数量。返回订单和事件 ID。 |
+| `list_orders`、`get_order_detail` | 按标的、方向、状态或已知发生时间筛选。按 UUID 获取事件及当前复盘。出现多个候选时须请用户选定。 |
+| `update_review` | 传订单 UUID、读取到的版本和全部五个复盘字段。尚无复盘时版本为 0。保留已有内容，明确需要清空的字段传 null。返回订单 ID、复盘 ID 和版本。 |
+
+为每个新写操作生成独立的 `idempotency_key`。重试原请求时保留原键和参数。读取工具成功结果中的 `structuredContent.ok` 和回执 ID 后才向用户确认；处理工具错误时检查 `isError`，并同时处理协议错误和 HTTP 错误。复盘版本冲突后重新读取，再由用户确认修改。
+
+本阶段使用独立 Bearer 令牌及 Vercel Preview 访问保护。预览验收客户端通过 Vercel 的自动化请求头进入受保护部署，令牌和保护凭据均通过私密请求头传递。ChatGPT 自定义连接页面使用 OAuth 连接个人数据；网页端授权和工具扫描需单独验收。不要把令牌或 Vercel 保护凭据放入服务器 URL。[MCP SDK HTTP 文档](https://ts.sdk.modelcontextprotocol.io/v2/) · [ChatGPT MCP 认证](https://developers.openai.com/plugins/build/auth)
+
 ## 验收
 
 ```sh
@@ -83,7 +98,7 @@ npm run build
 
 ## Vercel 预览与 Neon 联调
 
-Vercel 项目使用 Hobby、Next.js 预设和 Node.js 22。Neon Free 项目为预览环境提供独立数据库分支 `phase2-preview`。运行时使用低权限角色的 pooled 地址，迁移使用该分支所有者的 direct 地址。将上述三个变量配置在 Vercel 的 Preview 环境，并对预览分支运行迁移。
+Vercel 项目使用 Hobby、Next.js 预设和 Node.js 22。Neon Free 项目为预览环境提供独立数据库分支 `phase2-preview`。运行时使用低权限角色的 pooled 地址，迁移使用该分支所有者的 direct 地址。将上述四个变量配置在 Vercel 的 Preview 环境，并对预览分支运行迁移。
 
 Vercel CLI 要求此项目的首次部署使用 Production。首次发布后，可从项目根目录执行 `vercel deploy --environment preview` 发布预览。受 Vercel 访问保护的预览会先验证 Vercel 身份，再由应用登录页验证个人访问密码。
 
@@ -105,6 +120,6 @@ PGSERVICE=journal_restore pg_restore --dbname="service=journal_restore" --single
 
 ## 平台依据
 
-截至 2026-11-19，Next.js App Router 提供 Route Handlers，Node.js 运行时通过 pg 和 Drizzle 访问 Neon，事务内持有同一连接。Neon 的池化端点使用 PgBouncer。[Next.js](https://nextjs.org/docs/app/getting-started/route-handlers) · [Drizzle 事务](https://orm.drizzle.team/docs/transactions) · [Neon 连接池](https://neon.com/docs/connect/connection-pooling)
+Next.js App Router 提供 Route Handlers，Node.js 运行时通过 pg 和 Drizzle 访问 Neon，事务内持有同一连接。Neon 的池化端点使用 PgBouncer。[Next.js](https://nextjs.org/docs/app/getting-started/route-handlers) · [Drizzle 事务](https://orm.drizzle.team/docs/transactions) · [Neon 连接池](https://neon.com/docs/connect/connection-pooling)
 
-Neon Free 当前列出每项目每月 100 CU-hours 和 1 GB 存储。Vercel Hobby 面向个人用途，当前每月包含 100 万次函数调用和 4 CPU-hours。部署时重新检查额度。MCP 官方 TypeScript SDK 提供独立的服务端包和远程 HTTP 传输，接入阶段再确定依赖及认证方式。[Neon Free](https://neon.com/pricing) · [Vercel Hobby](https://vercel.com/docs/plans/hobby) · [Vercel 条款](https://vercel.com/legal/terms) · [MCP TypeScript SDK](https://ts.sdk.modelcontextprotocol.io/v2/)
+Neon Free 当前列出每项目每月 100 CU-hours 和 1 GB 存储。Vercel Hobby 面向个人用途，当前每月包含 100 万次函数调用和 4 CPU-hours。部署时重新检查额度。本应用使用 MCP 官方 TypeScript SDK v2 的无状态 HTTP 处理器。[Neon Free](https://neon.com/pricing) · [Vercel Hobby](https://vercel.com/docs/plans/hobby) · [Vercel 条款](https://vercel.com/legal/terms) · [MCP TypeScript SDK](https://ts.sdk.modelcontextprotocol.io/v2/)
