@@ -1,6 +1,6 @@
 import { createMcpHandler } from '@modelcontextprotocol/server';
-import { authenticateBearer } from '@/lib/http';
 import { createJournalMcpServer } from '@/lib/mcp-tools';
+import { authorizeMcpRequest } from '@/lib/mcp-auth';
 import { JournalError } from '@/lib/orders';
 
 export const runtime = 'nodejs';
@@ -15,11 +15,18 @@ const handler = createMcpHandler(createJournalMcpServer, {
 async function handle(request: Request) {
   const headers = new Headers({ 'Cache-Control': 'private, no-store' });
   try {
-    const token = process.env.JOURNAL_MCP_TOKEN;
-    if (token && (token === process.env.JOURNAL_API_TOKEN || token === process.env.JOURNAL_WEB_PASSWORD)) {
-      throw new JournalError(503, 'AUTH_UNAVAILABLE', 'MCP 需要独立的访问令牌。');
+    const authorization = await authorizeMcpRequest(request);
+    if (!authorization.authorized) {
+      if (authorization.challenge) headers.set('WWW-Authenticate', authorization.challenge);
+      if (authorization.status === 401 && !authorization.challenge) {
+        headers.set('WWW-Authenticate', 'Bearer realm="journal-mcp"');
+      }
+      return Response.json({
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: authorization.status === 401 ? -32000 : -32603, message: authorization.message },
+      }, { status: authorization.status, headers });
     }
-    authenticateBearer(request, token);
     const origin = request.headers.get('origin');
     if (origin !== null && origin !== new URL(request.url).origin) {
       throw new JournalError(403, 'INVALID_ORIGIN', '请求来源不受信任。');
@@ -34,7 +41,9 @@ async function handle(request: Request) {
   } catch (error) {
     const failure = error instanceof JournalError ? error :
       new JournalError(503, 'SERVICE_UNAVAILABLE', '服务暂时不可用，请使用原幂等键重试。');
-    if (failure.status === 401) headers.set('WWW-Authenticate', 'Bearer realm="journal-mcp"');
+    if (failure.status === 401 && !headers.has('WWW-Authenticate')) {
+      headers.set('WWW-Authenticate', 'Bearer realm="journal-mcp"');
+    }
     return Response.json({ jsonrpc: '2.0', id: null, error: { code: -32000, message: failure.message } },
       { status: failure.status, headers });
   }

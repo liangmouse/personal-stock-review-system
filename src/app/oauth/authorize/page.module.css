@@ -1,0 +1,165 @@
+.page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: radial-gradient(ellipse at 12% 8%, rgb(49 93 212 / 8%), transparent 42%), #f1f4f9;
+}
+
+.card {
+  width: min(100%, 470px);
+  padding: 42px;
+  border: 1px solid #e0e6f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 22px 70px rgb(25 42 70 / 9%);
+}
+
+.mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #192a46;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.kicker {
+  margin: 28px 0 10px;
+  color: #315dd4;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+}
+
+.card h1 {
+  margin: 0;
+  color: #192a46;
+  font-size: 30px;
+  letter-spacing: -0.04em;
+}
+
+.description {
+  margin: 12px 0 0;
+  color: #627089;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.permission {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 16px;
+  border: 1px solid #e1e6ef;
+  border-radius: 11px;
+  color: #243b60;
+  font-size: 14px;
+}
+
+.permission span:first-child {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border-radius: 999px;
+  background: #e4f3eb;
+  color: #16815e;
+  font-weight: 700;
+}
+
+.form {
+  display: grid;
+  gap: 11px;
+  margin-top: 25px;
+}
+
+.form label {
+  color: #243b60;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form input[type='password'] {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 13px;
+  border: 1px solid #ced8e8;
+  border-radius: 9px;
+  background: #fff;
+  color: #192a46;
+  font: inherit;
+  outline: none;
+}
+
+.form input:focus-visible {
+  border-color: #315dd4;
+  box-shadow: 0 0 0 3px rgb(49 93 212 / 16%);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.actions button {
+  min-height: 46px;
+  border-radius: 9px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.deny {
+  border: 1px solid #d5deeb;
+  background: #fff;
+  color: #243b60;
+}
+
+.allow {
+  border: 1px solid #315dd4;
+  background: #315dd4;
+  color: #fff;
+}
+
+.allow:hover:not(:disabled) {
+  background: #274db7;
+}
+
+.signedIn {
+  margin: 2px 0;
+  color: #16815e;
+  font-size: 14px;
+}
+
+.error {
+  margin: 2px 0 0;
+  color: #a93238;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.footnote {
+  margin: 16px 0 0;
+  color: #8995a8;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .card {
+    padding: 32px 26px;
+  }
+}

@@ -12,7 +12,7 @@
 4. 在本机独立 shell 中将 `DATABASE_URL` 临时设为开发库的 direct 地址，执行 `npm run db:migrate`。迁移仅由部署者执行。退出该 shell 后，应用使用 `.env.local` 中的运行时连接。
 5. 执行 `npm run dev`。本地默认监听端口为 3000。只将令牌用于本机测试或 HTTPS 请求。
 
-运行时数据库角色需要 public schema 的 USAGE，orders、reviews 和 write_rate_limit 的 SELECT/INSERT/UPDATE，以及 order_events 和 review_write_receipts 的 SELECT/INSERT。生产密钥存入部署平台的服务端环境变量。备份凭据和迁移凭据由部署者独立保存。
+部署者使用迁移账号应用 Drizzle 迁移；运行时和只读备份账号分别授权，具体权限见 `scripts/deploy/production-grants.sql`。生产密钥存入部署平台的服务端环境变量。备份凭据和迁移凭据由部署者独立保存。
 
 ## Web 工作台
 
@@ -70,9 +70,9 @@
 
 首次成功写入返回 HTTP 201 和 `{ok, order_id, event_id, replayed:false}`，同一请求重放返回 200、原始两个 ID 和 `replayed:true`。同键异参、超额成交或状态冲突返回 409。失败响应为 `{ok:false, error:{code,message}}`。遇到超时、503 或连接中断，保留请求内容和原键重试。429 使用 Retry-After。客户端只在取得成功回执后确认入账。
 
-## MCP 预览接入
+## Agent 与 ChatGPT 接入
 
-MCP 客户端向预览域名的 `/mcp` 发送 Streamable HTTP 请求，并在请求头发送 `Authorization: Bearer <JOURNAL_MCP_TOKEN>`。握手、工具发现、查询和写入均须鉴权。请求体上限为 128 KiB。订单写入与 HTTP API 共享每分钟 60 次的限额，复盘写入与网页共享每分钟 30 次的限额。
+MCP 客户端向应用域名的 `/mcp` 发送 Streamable HTTP 请求，并在请求头发送 `Authorization: Bearer <JOURNAL_MCP_TOKEN>`。握手、工具发现、查询和写入均须鉴权。请求体上限为 128 KiB。订单写入与 HTTP API 共享每分钟 60 次的限额，复盘写入与网页共享每分钟 30 次的限额。
 
 | 工具 | 输入和回执 |
 | --- | --- |
@@ -83,7 +83,9 @@ MCP 客户端向预览域名的 `/mcp` 发送 Streamable HTTP 请求，并在请
 
 为每个新写操作生成独立的 `idempotency_key`。重试原请求时保留原键和参数。读取工具成功结果中的 `structuredContent.ok` 和回执 ID 后才向用户确认；处理工具错误时检查 `isError`，并同时处理协议错误和 HTTP 错误。复盘版本冲突后重新读取，再由用户确认修改。
 
-本阶段使用独立 Bearer 令牌及 Vercel Preview 访问保护。预览验收客户端通过 Vercel 的自动化请求头进入受保护部署，令牌和保护凭据均通过私密请求头传递。ChatGPT 自定义连接页面使用 OAuth 连接个人数据；网页端授权和工具扫描需单独验收。不要把令牌或 Vercel 保护凭据放入服务器 URL。[MCP SDK HTTP 文档](https://ts.sdk.modelcontextprotocol.io/v2/) · [ChatGPT MCP 认证](https://developers.openai.com/plugins/build/auth)
+在 ChatGPT 插件页添加自定义 MCP 服务器，填写工作台「连接 Agent」提供的 HTTPS 地址。认证方式选 OAuth，客户端 ID 为 `journal-chatgpt`，客户端密钥使用本环境独立生成的 `JOURNAL_OAUTH_CLIENT_SECRET`。在交易日志的授权页核对域名，使用网页登录密码授权，再回到 ChatGPT 扫描六个工具。[ChatGPT 连接说明](https://developers.openai.com/plugins/deploy/connect-chatgpt)
+
+部署 OAuth 时设置固定的 `JOURNAL_PUBLIC_ORIGIN`（含 HTTPS 协议、无路径）。授权端仅接受 ChatGPT 的精确回调地址、授权码和 S256 PKCE。访问令牌有效期为一小时，授予 `offline_access` 后可轮换刷新令牌，最长三十天。数据库存储令牌摘要。更换网页登录密码会使旧授权失效。其他支持自定义 Bearer 头的客户端可继续使用独立的 `JOURNAL_MCP_TOKEN`。受 Vercel 保护的预览另需通过 Vercel 访问保护。[MCP SDK](https://ts.sdk.modelcontextprotocol.io/v2/) · [ChatGPT MCP 认证](https://developers.openai.com/plugins/build/auth)
 
 ## 验收
 

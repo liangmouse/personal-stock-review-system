@@ -232,7 +232,7 @@ after(async () => {
 test("MCP endpoint requires its own token for every method and rejects untrusted origins", async () => {
   const unauthenticated = await rpc("tools/list", {}, { token: null });
   assert.equal(unauthenticated.response.status, 401);
-  assert.equal(unauthenticated.message.error?.message, "需要有效的访问令牌。");
+  assert.equal(unauthenticated.message.error?.message, "需要有效的 MCP 访问令牌。");
 
   const apiToken = process.env.JOURNAL_API_TOKEN!;
   const wrongToken = await rpc("tools/list", {}, { token: apiToken });
