@@ -13,7 +13,7 @@ export default function LoginPage() {
   return (
     <main className={styles.page}>
       <section className={styles.card} aria-labelledby="login-title">
-        <div className={styles.mark} aria-hidden="true">交</div>
+        <div className={styles.mark} aria-hidden="true">记</div>
         <p className={styles.kicker}>个人交易日志</p>
         <h1 id="login-title">欢迎回来</h1>
         <p className={styles.description}>输入访问密码，查看你的交易记录。</p>
@@ -31,7 +31,7 @@ export default function LoginPage() {
           />
           {state.error && <p className={styles.error} role="alert">{state.error}</p>}
           <button disabled={pending} type="submit">
-            {pending ? '正在验证…' : '继续'}
+            {pending ? '正在验证…' : '登录交易日志'}
           </button>
         </form>
         <p className={styles.footnote}>仅限本人使用</p>

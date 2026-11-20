@@ -25,13 +25,6 @@ export function JournalShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="workspace">
-        <header className="workspace-header">
-          <span aria-hidden="true" />
-          <span className="workspace-header-status">
-            <span aria-hidden="true">⌑</span>
-            仅本人可访问
-          </span>
-        </header>
         <main className="workspace-main">{children}</main>
       </div>
     </div>

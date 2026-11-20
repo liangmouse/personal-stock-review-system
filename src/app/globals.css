@@ -9,7 +9,7 @@
   --paper: #f1f4f9;
   --white: #fff;
   --line: #e1e6ef;
-  --muted: #738099;
+  --muted: #596981;
   --text: #253550;
   --green: #16815e;
   --amber: #a76a08;
@@ -204,27 +204,6 @@ summary:focus-visible {
   min-width: 0;
 }
 
-.workspace-header {
-  display: flex;
-  min-height: 64px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 42px;
-  border-bottom: 1px solid #e4e8f0;
-  background: rgb(255 255 255 / 80%);
-  color: #53627a;
-  font-size: 12px;
-}
-
-.workspace-header-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #75839a;
-  margin-left: auto;
-  font-size: 11px;
-}
-
 .workspace-main {
   width: min(100%, 1480px);
   margin: 0 auto;
@@ -302,6 +281,44 @@ summary:focus-visible {
   background: #f7f9fc;
 }
 
+.agent-connection {
+  position: relative;
+  align-self: center;
+  flex: none;
+}
+
+.agent-connection summary {
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.agent-connection summary::-webkit-details-marker { display: none; }
+
+.agent-connection summary::after {
+  content: "⌄";
+  margin-inline-start: 5px;
+}
+
+.agent-connection-panel {
+  position: absolute;
+  z-index: 3;
+  inset: calc(100% + 8px) 0 auto auto;
+  width: min(350px, calc(100vw - 32px));
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--white);
+  box-shadow: 0 12px 32px rgb(25 42 70 / 12%);
+}
+
+.agent-connection-panel label { font-size: 13px; font-weight: 650; }
+.agent-connection-panel p,
+.agent-connection-panel [role="status"] { color: var(--muted); font-size: 12px; }
+.agent-endpoint { display: flex; margin: 8px 0; gap: 6px; }
+.agent-endpoint input { min-width: 0; flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 5px; font: 12px var(--mono); }
+.agent-endpoint button { min-height: 44px; padding: 0 12px; border-radius: 5px; background: var(--blue); color: white; font-size: 13px; }
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -345,6 +362,7 @@ summary:focus-visible {
 }
 
 .metric-value {
+  font-variant-numeric: tabular-nums;
   margin-top: 13px;
   color: var(--ink);
   font-family: var(--mono);
@@ -356,8 +374,8 @@ summary:focus-visible {
 
 .metric-caption {
   margin-top: 8px;
-  color: #8a95a8;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .metric-link {
@@ -365,7 +383,7 @@ summary:focus-visible {
   right: 18px;
   bottom: 17px;
   color: var(--blue);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -407,8 +425,8 @@ summary:focus-visible {
 
 .panel-heading p {
   margin: 5px 0 0;
-  color: #8a95a8;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .text-link {
@@ -498,8 +516,8 @@ summary:focus-visible {
 .recent-event-meta,
 .recent-event-values small,
 .time-cell small {
-  color: #8b96a8;
-  font-size: 9px;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .recent-event-values {
@@ -522,7 +540,7 @@ summary:focus-visible {
   align-items: center;
   padding: 0 8px;
   border-radius: 999px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -556,7 +574,7 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -597,7 +615,7 @@ summary:focus-visible {
   display: grid;
   gap: 7px;
   color: #4e5d75;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -637,7 +655,7 @@ summary:focus-visible {
 
 .clear-filter {
   color: #79869a;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .clear-filter:hover {
@@ -649,8 +667,8 @@ summary:focus-visible {
 }
 
 .table-caption {
-  color: #8b96a8;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -663,7 +681,7 @@ summary:focus-visible {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -672,7 +690,7 @@ summary:focus-visible {
   padding: 0 13px;
   background: #f8f9fc;
   color: #8190a6;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 650;
   text-align: left;
 }
@@ -703,7 +721,7 @@ summary:focus-visible {
 
 .mono-cell {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -743,7 +761,7 @@ summary:focus-visible {
   padding: 8px 20px;
   border-top: 1px solid #e9edf3;
   color: #8995a8;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .pagination-actions {
@@ -760,7 +778,7 @@ summary:focus-visible {
   border-radius: 5px;
   background: white;
   color: #596983;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .page-button:hover {
@@ -808,8 +826,8 @@ summary:focus-visible {
 .empty-state p {
   max-width: 350px;
   margin: 7px 0 0;
-  color: #8894a7;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: 11px;
   line-height: 1.7;
 }
 
@@ -850,13 +868,13 @@ summary:focus-visible {
 
 .summary-item > span {
   color: #8994a7;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .summary-item strong {
   overflow: hidden;
   color: #35445e;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -864,13 +882,13 @@ summary:focus-visible {
 
 .summary-item strong.id-value {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .event-count {
   color: #8290a5;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .timeline-list {
@@ -910,7 +928,7 @@ summary:focus-visible {
   background: var(--blue);
   color: white;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .timeline-marker.tone-success,
@@ -937,7 +955,7 @@ summary:focus-visible {
 .timeline-sequence {
   color: #a0aaba;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .timeline-main {
@@ -952,7 +970,7 @@ summary:focus-visible {
   flex-wrap: wrap;
   gap: 22px;
   color: #5f6d83;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .timeline-dates span {
@@ -963,7 +981,7 @@ summary:focus-visible {
 
 .timeline-dates small {
   color: #939eb0;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .timeline-note {
@@ -972,7 +990,7 @@ summary:focus-visible {
   border-left: 2px solid #c8d5ee;
   background: #f8faff;
   color: #586780;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.7;
   white-space: pre-wrap;
 }
@@ -981,7 +999,7 @@ summary:focus-visible {
   margin-top: 12px;
   border-top: 1px solid #edf0f5;
   color: #7b879b;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .raw-event summary {
@@ -1012,7 +1030,7 @@ summary:focus-visible {
   overflow-wrap: anywhere;
   color: #596981;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .detail-review-panel {
@@ -1064,7 +1082,7 @@ summary:focus-visible {
   margin-left: auto;
   padding: 0 5px 8px;
   color: #8a96a8;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .review-order-list {
@@ -1102,7 +1120,7 @@ summary:focus-visible {
 .review-order-summary {
   margin: 8px 0 0;
   color: #77849a;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .review-order-excerpt {
@@ -1110,7 +1128,7 @@ summary:focus-visible {
   margin: 8px 0 0;
   overflow: hidden;
   color: #7b879b;
-  font-size: 9px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1120,7 +1138,7 @@ summary:focus-visible {
   margin-top: 8px;
   color: #9aa4b3;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .review-order-actions {
@@ -1136,7 +1154,7 @@ summary:focus-visible {
   align-items: center;
   gap: 6px;
   color: #188161;
-  font-size: 9px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -1167,7 +1185,7 @@ summary:focus-visible {
 .field-hint {
   margin: -2px 0 2px;
   color: #8793a6;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 400;
 }
 
@@ -1195,17 +1213,12 @@ summary:focus-visible {
   border-top: 1px solid #e9edf3;
   color: #8b97a9;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 
 @media (max-width: 1100px) {
   .workspace-main {
-    padding-right: 25px;
-    padding-left: 25px;
-  }
-
-  .workspace-header {
     padding-right: 25px;
     padding-left: 25px;
   }
@@ -1266,7 +1279,7 @@ summary:focus-visible {
   }
 
   .brand-copy small {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .side-nav {
@@ -1280,11 +1293,11 @@ summary:focus-visible {
   }
 
   .side-nav-link {
-    min-height: 36px;
+    min-height: 44px;
     flex: 0 0 auto;
     gap: 7px;
     padding: 0 11px;
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .side-nav-icon {
@@ -1309,17 +1322,7 @@ summary:focus-visible {
     width: auto;
     gap: 5px;
     padding: 7px 9px;
-    font-size: 9px;
-  }
-
-  .workspace-header {
-    min-height: 46px;
-    padding: 0 17px;
-    font-size: 10px;
-  }
-
-  .workspace-header-status {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .workspace-main {
@@ -1352,7 +1355,7 @@ summary:focus-visible {
   }
 
   .metric-card-top {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .metric-icon {
@@ -1367,14 +1370,14 @@ summary:focus-visible {
   }
 
   .metric-caption {
-    font-size: 8px;
+    font-size: 11px;
     line-height: 1.5;
   }
 
   .metric-link {
     right: 10px;
     bottom: 10px;
-    font-size: 8px;
+    font-size: 11px;
   }
 
   .recent-event-row {
@@ -1384,7 +1387,7 @@ summary:focus-visible {
   }
 
   .recent-event-values {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .recent-event-row > .status-pill {
@@ -1476,7 +1479,7 @@ summary:focus-visible {
   .review-order-actions .button {
     min-height: 33px;
     padding: 0 10px;
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .review-form {
@@ -1485,10 +1488,6 @@ summary:focus-visible {
 }
 
 @media (max-width: 430px) {
-  .workspace-header {
-    display: none;
-  }
-
   .page-heading {
     gap: 10px;
   }
@@ -1497,7 +1496,7 @@ summary:focus-visible {
   .page-heading > .button-primary {
     min-height: 34px;
     padding: 0 9px;
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .page-intro {
@@ -1523,7 +1522,7 @@ summary:focus-visible {
   }
 
   .pagination > span {
-    font-size: 8px;
+    font-size: 11px;
   }
 
   .review-tabs {
@@ -1534,11 +1533,11 @@ summary:focus-visible {
 
   .review-tab {
     padding: 0 9px;
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .review-total {
-    font-size: 8px;
+    font-size: 11px;
   }
 
   .review-order-card {

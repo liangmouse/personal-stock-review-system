@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { McpConnection } from "@/components/mcp-connection";
 
 import { eventTypeLabels, eventTone, formatDateTime, formatDecimal, formatPrice, orderStatusLabels, sideLabels, statusTone } from "@/components/labels";
 import { getDb } from "@/db/client";
@@ -15,13 +16,10 @@ export default async function DashboardPage() {
     <div className="page-content">
       <section className="page-heading dashboard-heading">
         <div>
-          <p className="page-kicker">交易记录</p>
-          <h1>总览</h1>
+          <h1>交易总览</h1>
           <p className="page-intro">订单状态、交易事件和待复盘记录。</p>
         </div>
-        <Link className="button button-primary" href="/events">
-          查看交易流水 <span aria-hidden="true">↗</span>
-        </Link>
+        <McpConnection />
       </section>
 
       <section aria-label="交易记录概况" className="metric-grid">
@@ -65,7 +63,7 @@ export default async function DashboardPage() {
           <div className="empty-state compact-empty">
             <span aria-hidden="true" className="empty-symbol">⌁</span>
             <h3>还没有交易事件</h3>
-            <p>记录订单后，相关挂单、成交和撤单会显示在这里。</p>
+            <p>通过已连接的 Agent 记录第一笔委托后，即可在这里查看它的成交与撤单。</p>
           </div>
         ) : (
           <div className="recent-event-list">
