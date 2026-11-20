@@ -207,4 +207,86 @@ export const writeRateLimit = pgTable("write_rate_limit", {
   hits: integer("hits").notNull(),
 });
 
-export const schema = { orders, orderEvents, reviews, reviewWriteReceipts, writeRateLimit };
+export const oauthAuthorizationCodes = pgTable(
+  "oauth_authorization_codes",
+  {
+    codeHash: varchar("code_hash", { length: 64 }).primaryKey(),
+    clientId: varchar("client_id", { length: 64 }).notNull(),
+    redirectUri: text("redirect_uri").notNull(),
+    scope: varchar("scope", { length: 64 }).notNull(),
+    resource: text("resource").notNull(),
+    codeChallenge: varchar("code_challenge", { length: 43 }).notNull(),
+    codeChallengeMethod: varchar("code_challenge_method", { length: 8 }).notNull(),
+    authorizationVersion: varchar("authorization_version", { length: 64 }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("oauth_authorization_codes_hash_ck", sql`${table.codeHash} ~ '^[a-f0-9]{64}$'`),
+    check("oauth_authorization_codes_challenge_ck", sql`${table.codeChallenge} ~ '^[A-Za-z0-9_-]{43}$'`),
+    check("oauth_authorization_codes_method_ck", sql`${table.codeChallengeMethod} = 'S256'`),
+    check("oauth_authorization_codes_scope_ck", sql`${table.scope} in ('journal', 'journal offline_access')`),
+    index("oauth_authorization_codes_expires_idx").on(table.expiresAt),
+  ],
+);
+
+export const oauthAccessTokens = pgTable(
+  "oauth_access_tokens",
+  {
+    tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
+    familyId: uuid("family_id"),
+    clientId: varchar("client_id", { length: 64 }).notNull(),
+    scope: varchar("scope", { length: 64 }).notNull(),
+    resource: text("resource").notNull(),
+    authorizationVersion: varchar("authorization_version", { length: 64 }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("oauth_access_tokens_hash_ck", sql`${table.tokenHash} ~ '^[a-f0-9]{64}$'`),
+    check("oauth_access_tokens_scope_ck", sql`${table.scope} in ('journal', 'journal offline_access')`),
+    index("oauth_access_tokens_family_idx").on(table.familyId),
+    index("oauth_access_tokens_expires_idx").on(table.expiresAt),
+  ],
+);
+
+export const oauthRefreshTokens = pgTable(
+  "oauth_refresh_tokens",
+  {
+    tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
+    familyId: uuid("family_id").notNull(),
+    clientId: varchar("client_id", { length: 64 }).notNull(),
+    scope: varchar("scope", { length: 64 }).notNull(),
+    resource: text("resource").notNull(),
+    authorizationVersion: varchar("authorization_version", { length: 64 }).notNull(),
+    familyExpiresAt: timestamp("family_expires_at", { withTimezone: true, mode: "date" }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true, mode: "date" }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("oauth_refresh_tokens_hash_ck", sql`${table.tokenHash} ~ '^[a-f0-9]{64}$'`),
+    check("oauth_refresh_tokens_scope_ck", sql`${table.scope} = 'journal offline_access'`),
+    index("oauth_refresh_tokens_family_idx").on(table.familyId),
+    index("oauth_refresh_tokens_expiry_idx").on(table.familyExpiresAt),
+  ],
+);
+
+export const schema = {
+  orders,
+  orderEvents,
+  reviews,
+  reviewWriteReceipts,
+  writeRateLimit,
+  oauthAuthorizationCodes,
+  oauthAccessTokens,
+  oauthRefreshTokens,
+};
