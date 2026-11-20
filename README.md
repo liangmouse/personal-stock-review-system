@@ -106,21 +106,17 @@ Vercel CLI 要求此项目的首次部署使用 Production。首次发布后，�
 
 ## 正式发布验收
 
-生产库使用独立的 Neon 分支、运行时角色及凭据。迁移完成后按 `scripts/deploy/production-grants.sql` 授权，并在 Vercel Production 设置服务端凭据和固定的 HTTPS origin。使用已设好运行时 `DATABASE_URL` 的独立 shell 执行 `npx tsx scripts/deploy/check-database.ts`，即可验证挂单、部分成交、撤单、复盘及重试。脚本在外层事务内执行并回滚，再检查测试订单、事件和回执均未持久化。
+正式站使用独立的 Neon 生产分支，在 Vercel 关联此仓库的 `main` 后自动部署。打开工作台时使用网页登录密码，Agent 使用同一域名的 `/mcp`。[正式工作台](https://personal-stock-review-system.vercel.app)
+
+设置 ChatGPT 插件前，先验证正式域名的 `/.well-known/oauth-authorization-server` 可公开读取，并返回与正式域名一致的 `issuer`。在 ChatGPT 高级 OAuth 设置中刷新元数据，核对显示的稳定回调为 `https://chatgpt.com/connector_platform_oauth_redirect`。选择自定义客户端和 `client_secret_basic`，需要持续登录时将 `journal`、`offline_access` 加入基础授权范围。完成授权后，可在聊天中请插件调用 `list_orders` 检查连接。
+
+迁移使用独立的数据库所有者凭据。迁移完成后按 `scripts/deploy/production-grants.sql` 授权，并在 Vercel Production 设置服务端凭据和固定的 HTTPS origin。使用已设好运行时 `DATABASE_URL` 的独立 shell 执行 `npx tsx scripts/deploy/check-database.ts`，即可验证挂单、部分成交、撤单、复盘及重试。脚本在外层事务内执行并回滚，再检查测试订单、事件和回执均未持久化。
 
 ## 逻辑备份和恢复
 
-使用与数据库同主版本或更新的 PostgreSQL 客户端。为备份源和**新建的空恢复库**配置本机 libpq 服务名 `journal_backup`、`journal_restore`，均指向 direct 连接，并在密码文件或凭据管理工具中提供凭据。备份应覆盖 public 表、序列、触发器和 drizzle 迁移历史。下列命令在仓库以外的受保护目录执行。
+Mac 的 launchd 每天按本地时间 03:15 从 Neon 的直接连接导出应用表和 Drizzle 迁移记录。专用账号只有读取权限。备份脚本将 PostgreSQL 归档流直接加密，保留最近 30 天的快照。请将加密私钥和恢复口令分别保存在独立的离线位置。[备份与空库恢复手册](scripts/backup/README.md)
 
-```sh
-umask 077
-backup_file="journal-$(date -u +%Y%m%dT%H%M%SZ).dump"
-PGSERVICE=journal_backup pg_dump --format=custom --no-owner --no-acl --file="$backup_file"
-pg_restore --list "$backup_file"
-PGSERVICE=journal_restore pg_restore --dbname="service=journal_restore" --single-transaction --exit-on-error --no-owner --no-acl "$backup_file"
-```
-
-在恢复库核对订单、事件、复盘和迁移行数，以及典型订单的事件顺序与累计成交量。用同一请求和幂等键对恢复库重放一次，应返回原订单和事件 ID，行数保持一致。恢复后重新授予运行时角色所需权限。备份文件含完整私人交易信息，须加密后存放在独立于 Neon 的位置。部署阶段使用独立只读角色进行逻辑备份，在 Mac 上用 launchd 每日运行。加密文件保留 30 天；安装、恢复资料保管和空库恢复步骤见 [备份手册](scripts/backup/README.md)。[Neon 逻辑备份](https://neon.com/docs/manage/backup-pg-dump)
+恢复演练使用独立的空数据库。恢复后核对迁移、订单、事件、复盘和幂等回执，再用合成订单验证事件顺序、累计成交量和重复请求的原始回执。[Neon 逻辑备份](https://neon.com/docs/manage/backup-pg-dump)
 
 本地已在 PostgreSQL 16.2 完成一次恢复演练。使用 3 笔合成订单、5 条事件、1 份复盘进行全库逻辑备份，恢复到空库后，业务表、限流计数和两条迁移记录的逐行摘要均一致。通过生产构建的 HTTP 服务重放创建请求，返回了原订单和事件 ID。
 
