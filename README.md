@@ -104,6 +104,10 @@ Vercel 项目使用 Hobby、Next.js 预设和 Node.js 22。Neon Free 项目为�
 
 Vercel CLI 要求此项目的首次部署使用 Production。首次发布后，可从项目根目录执行 `vercel deploy --environment preview` 发布预览。受 Vercel 访问保护的预览会先验证 Vercel 身份，再由应用登录页验证个人访问密码。
 
+## 正式发布验收
+
+生产库使用独立的 Neon 分支、运行时角色及凭据。迁移完成后按 `scripts/deploy/production-grants.sql` 授权，并在 Vercel Production 设置服务端凭据和固定的 HTTPS origin。使用已设好运行时 `DATABASE_URL` 的独立 shell 执行 `npx tsx scripts/deploy/check-database.ts`，即可验证挂单、部分成交、撤单、复盘及重试。脚本在外层事务内执行并回滚，再检查测试订单、事件和回执均未持久化。
+
 ## 逻辑备份和恢复
 
 使用与数据库同主版本或更新的 PostgreSQL 客户端。为备份源和**新建的空恢复库**配置本机 libpq 服务名 `journal_backup`、`journal_restore`，均指向 direct 连接，并在密码文件或凭据管理工具中提供凭据。备份应覆盖 public 表、序列、触发器和 drizzle 迁移历史。下列命令在仓库以外的受保护目录执行。
@@ -116,7 +120,7 @@ pg_restore --list "$backup_file"
 PGSERVICE=journal_restore pg_restore --dbname="service=journal_restore" --single-transaction --exit-on-error --no-owner --no-acl "$backup_file"
 ```
 
-在恢复库核对订单、事件、复盘和迁移行数，以及典型订单的事件顺序与累计成交量。用同一请求和幂等键对恢复库重放一次，应返回原订单和事件 ID，行数保持一致。恢复后重新授予运行时角色所需权限。备份文件含完整私人交易信息，须加密后存放在独立于 Neon 的位置。生产备份的调度、保留周期和定期恢复演练在部署阶段配置。[Neon 逻辑备份](https://neon.com/docs/manage/backup-pg-dump)
+在恢复库核对订单、事件、复盘和迁移行数，以及典型订单的事件顺序与累计成交量。用同一请求和幂等键对恢复库重放一次，应返回原订单和事件 ID，行数保持一致。恢复后重新授予运行时角色所需权限。备份文件含完整私人交易信息，须加密后存放在独立于 Neon 的位置。部署阶段使用独立只读角色进行逻辑备份，在 Mac 上用 launchd 每日运行。加密文件保留 30 天；安装、恢复资料保管和空库恢复步骤见 [备份手册](scripts/backup/README.md)。[Neon 逻辑备份](https://neon.com/docs/manage/backup-pg-dump)
 
 本地已在 PostgreSQL 16.2 完成一次恢复演练。使用 3 笔合成订单、5 条事件、1 份复盘进行全库逻辑备份，恢复到空库后，业务表、限流计数和两条迁移记录的逐行摘要均一致。通过生产构建的 HTTP 服务重放创建请求，返回了原订单和事件 ID。
 
